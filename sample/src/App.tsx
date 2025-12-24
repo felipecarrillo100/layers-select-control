@@ -1,7 +1,14 @@
 import React, { useState } from "react";
 import './App.css';
-import { LayersSelectControl } from "../../src";
+import {LayersSelectControl} from "../../src";
 
+const PrimaryItem =     {
+        id: "girl",
+        title: "Cute girl",
+        description: "Read head",
+        thumbnail: "https://ix-marketing.imgix.net/focalpoint.png?ixembed=1731955445055&auto=format,compress",
+        thumbnailHd: "https://ix-marketing.imgix.net/focalpoint.png?ixembed=1731955445055&auto=format,compress"
+    }
 const layers = [
     {
         id: "forest",
@@ -49,13 +56,40 @@ const layers = [
 
 
 const App: React.FC = () => {
+    const [value, setValue] = useState("urban")
     return (
         <>
             <div dir="ltr">
                 <LayersSelectControl
                     x={10}
+                    y={280}
+                    theme="light"
+                    value={value}
+                    defaultItem={PrimaryItem}
+                    items={layers}
+                    onSelect={(item) => {
+                        setValue(item.id)
+                        console.log("Stateless/Selected:", item)
+                    }}
+                    onMore={() => console.log("More clicked")}
+                    onDefault={(item) => {
+                        item && setValue(item.id);
+                        console.log("Stateless/UseDefault")
+                    }}
+                    panelGap={4}
+                    parentGap={4}
+                    defaultThumb="./firstplace.svg"
+                    noImageThumb="noimage.png"
+                    moreThumb="./multiple-images.png"
+                />
+            </div>
+            <div dir="ltr">
+                <LayersSelectControl
+                    x={10}
                     y={180}
                     theme="light"
+                    defaultValue="urban"
+                    defaultItem={PrimaryItem}
                     items={layers}
                     onSelect={(item) => console.log("Selected:", item)}
                     onMore={() => console.log("More clicked")}
@@ -72,12 +106,13 @@ const App: React.FC = () => {
                     size="medium"
                     xRel="left"
                     items={layers}
+                    defaultValue="urban"
+                    defaultItem={PrimaryItem}
                     onSelect={(item) => console.log("Selected:", item)}
                     onMore={() => console.log("More clicked")}
                     onDefault={() => console.log("UseDefault")}
                     panelGap={4}
                     parentGap={4}
-
                 />
             </div>
         </>

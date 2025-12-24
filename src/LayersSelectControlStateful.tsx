@@ -1,3 +1,4 @@
+// LayerSelectControl.tsx
 import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
 
 export interface LayerItem {
@@ -9,29 +10,22 @@ export interface LayerItem {
 }
 
 interface Props {
-    value?: string;              // controlled
-    defaultValue?: string;       // uncontrolled
-
+    initialItemId?: string;
     defaultItem?: LayerItem;
     items: LayerItem[];
-
     x?: number;
     y?: number;
     xRel?: "left" | "right";
     yRel?: "top" | "bottom";
-
     onDefault: (item?: LayerItem) => void;
     onSelect: (item: LayerItem) => void;
     onMore?: () => void;
-
     maxVisible?: number;
     hoverCloseDelayMs?: number;
     theme?: "dark" | "light";
-
     defaultThumb?: string;
     noImageThumb?: string;
     moreThumb?: string;
-
     size?: "small" | "medium" | "large";
     panelGap?: number;
     parentGap?: number;
@@ -71,6 +65,7 @@ function ManagedImage({
     useEffect(() => {
         setFinalSrc(null);
         const urls = expanded ? candidates : [initial ?? candidates[0] ?? noImageThumb];
+
         let cancelled = false;
 
         const loadNext = (idx: number) => {
@@ -78,10 +73,11 @@ function ManagedImage({
                 if (!cancelled) setFinalSrc(noImageThumb);
                 return;
             }
+            const url = urls[idx];
             const img = new Image();
-            img.onload = () => !cancelled && setFinalSrc(urls[idx]);
+            img.onload = () => !cancelled && setFinalSrc(url);
             img.onerror = () => !cancelled && loadNext(idx + 1);
-            img.src = urls[idx];
+            img.src = url;
         };
 
         loadNext(0);
@@ -98,41 +94,32 @@ function ManagedImage({
 }
 
 // ------------------------------------------------------
-// CONSOLIDATED COMPONENT
+// Main Component
 // ------------------------------------------------------
-export const LayersSelectControl: React.FC<Props> = ({
-                                                        items,
-                                                        value,
-                                                        defaultValue,
-                                                        x = 8,
-                                                        y = 32,
-                                                        xRel = "left",
-                                                        yRel = "bottom",
-                                                        defaultItem,
-                                                        onSelect,
-                                                        onMore,
-                                                        onDefault,
-                                                        maxVisible = DEFAULT_MAX_VISIBLE,
-                                                        hoverCloseDelayMs = 160,
-                                                        theme = "dark",
-                                                        defaultThumb = DEFAULT_RESET_IMAGE_URL,
-                                                        noImageThumb = DEFAULT_NO_IMAGE_URL,
-                                                        moreThumb = DEFAULT_IMAGE_MORE,
-                                                        size = "small",
-                                                        panelGap = 8,
-                                                        parentGap = 8,
-                                                    }) => {
-    // Controlled / uncontrolled
-    const isControlled = value !== undefined;
-    const [internalValue, setInternalValue] = useState<string | undefined>(defaultValue);
-    const selectedId = isControlled ? value : internalValue;
-
-    const setSelectedId = (id: string) => {
-        if (!isControlled) setInternalValue(id);
-    };
-
+export const LayersSelectControlStateful: React.FC<Props> = ({
+                                                         items,
+                                                         initialItemId,
+                                                         x = 8,
+                                                         y = 32,
+                                                         xRel = "left",
+                                                         yRel = "bottom",
+                                                         defaultItem,
+                                                         onSelect,
+                                                         onMore,
+                                                         onDefault,
+                                                         maxVisible = DEFAULT_MAX_VISIBLE,
+                                                         hoverCloseDelayMs = 160,
+                                                         theme = "dark",
+                                                         defaultThumb = DEFAULT_RESET_IMAGE_URL,
+                                                         noImageThumb = DEFAULT_NO_IMAGE_URL,
+                                                         moreThumb = DEFAULT_IMAGE_MORE,
+                                                         size = "small",
+                                                         panelGap = 8,
+                                                         parentGap = 8,
+                                                     }) => {
     const [expanded, setExpanded] = useState(false);
     const [isTouch, setIsTouch] = useState(false);
+    const [selectedId, setSelectedId] = useState<string | undefined>(initialItemId ? initialItemId : items[0]?.id);
     const [parentWidth, setParentWidth] = useState<number | null>(null);
     const [canScrollLeft, setCanScrollLeft] = useState(false);
     const [canScrollRight, setCanScrollRight] = useState(false);
@@ -141,6 +128,7 @@ export const LayersSelectControl: React.FC<Props> = ({
     const scrollRef = useRef<HTMLDivElement | null>(null);
     const hoverTimer = useRef<number | null>(null);
 
+    // unique id for scoping styles to this instance
     const uidRef = useRef<string | null>(null);
     if (uidRef.current === null) {
         uidRef.current = "lsc-" + Math.random().toString(36).slice(2, 9);
@@ -149,14 +137,17 @@ export const LayersSelectControl: React.FC<Props> = ({
 
     const cfg = SIZE_CONFIG[size];
 
+    // Detect touch devices
     useEffect(() => {
-        setIsTouch("ontouchstart" in window || navigator.maxTouchPoints > 0);
+        setIsTouch(typeof window !== "undefined" && ("ontouchstart" in window || navigator.maxTouchPoints > 0));
     }, []);
 
+    // Close panel if click outside
     useEffect(() => {
         if (!expanded) return;
         const onPointer = (ev: PointerEvent) => {
-            if (rootRef.current && ev.target instanceof Node && !rootRef.current.contains(ev.target)) {
+            if (!rootRef.current) return;
+            if (ev.target instanceof Node && !rootRef.current.contains(ev.target)) {
                 setExpanded(false);
             }
         };
@@ -164,10 +155,12 @@ export const LayersSelectControl: React.FC<Props> = ({
         return () => document.removeEventListener("pointerdown", onPointer, { capture: true });
     }, [expanded]);
 
+    // Parent width measurement
     useEffect(() => {
         if (!rootRef.current) return;
         const parent = rootRef.current.parentElement;
         if (!parent) return;
+
         const updateWidth = () => setParentWidth(parent.clientWidth);
         updateWidth();
         const ro = new ResizeObserver(updateWidth);
@@ -177,24 +170,17 @@ export const LayersSelectControl: React.FC<Props> = ({
 
     const expandToRight = xRel === "left";
 
-    const collapsedThumb = useCallback(
-        (it?: LayerItem) => it?.thumbnail ?? noImageThumb,
-        [noImageThumb]
-    );
+    const collapsedThumb = useCallback((it?: LayerItem) => it?.thumbnail ?? noImageThumb, [noImageThumb]);
 
     const expandedCandidates = useCallback(
-        (it?: LayerItem) => [
-            ...(it?.thumbnailHd ? [it.thumbnailHd] : []),
-            ...(it?.thumbnail ? [it.thumbnail] : []),
-            noImageThumb,
-        ],
+        (it?: LayerItem) => [...(it?.thumbnailHd ? [it.thumbnailHd] : []), ...(it?.thumbnail ? [it.thumbnail] : []), noImageThumb],
         [noImageThumb]
     );
 
     const selectedItem = useMemo(() => {
-        if (defaultItem && selectedId === defaultItem.id) return defaultItem;
-        return items.find((x) => x.id === selectedId);
-    }, [items, selectedId, defaultItem]);
+        if (defaultItem && selectedId === defaultItem?.id) return defaultItem;
+        return items.find((x) => x.id === selectedId)
+    }, [items, selectedId]);
 
     const handleMouseEnter = () => {
         if (isTouch) return;
@@ -208,6 +194,10 @@ export const LayersSelectControl: React.FC<Props> = ({
         hoverTimer.current = window.setTimeout(() => setExpanded(false), hoverCloseDelayMs);
     };
 
+    // ----------------------------
+    // IMPORTANT: rootStyle uses exactly x/y (no parentGap added here).
+    // parentGap is applied to the far-side by the maxWidth calculation below.
+    // ----------------------------
     const rootStyle: React.CSSProperties = {
         position: "absolute",
         [xRel]: `${x}px`,
@@ -243,24 +233,33 @@ export const LayersSelectControl: React.FC<Props> = ({
     }, []);
 
     const scrollBy = (dir: number) => {
-        scrollRef.current?.scrollBy({ left: dir * 120, behavior: "smooth" });
+        if (!scrollRef.current) return;
+        scrollRef.current.scrollBy({ left: dir * 120, behavior: "smooth" });
     };
 
     useEffect(() => {
         const scrollEl = scrollRef.current;
         if (!scrollEl) return;
+
         updateArrows();
+
         scrollEl.addEventListener("scroll", updateArrows);
         const ro = new ResizeObserver(updateArrows);
         ro.observe(scrollEl);
         window.addEventListener("resize", updateArrows);
+
         return () => {
             scrollEl.removeEventListener("scroll", updateArrows);
             ro.disconnect();
             window.removeEventListener("resize", updateArrows);
         };
-    }, [updateArrows]);
+    }, [scrollRef.current, expanded, updateArrows]);
 
+    // --------------------------
+    // APPLY maxVisible FIX
+    // - visibleItems: items to render inside the tiles area
+    // - showMore: whether to render the "More…" tile
+    // --------------------------
     const visibleItems = useMemo(() => {
         if (!maxVisible || items.length <= maxVisible) return items;
         return items.slice(0, maxVisible);
@@ -269,13 +268,7 @@ export const LayersSelectControl: React.FC<Props> = ({
     const showMore = Boolean(onMore && items.length > (maxVisible || 0));
 
     return (
-        <div
-            ref={rootRef}
-            id={uid}
-            style={rootStyle}
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
-        >
+        <div ref={rootRef} id={uid} style={rootStyle} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
             <style>{`
 /* Scoped to instance #${uid} */
 #${uid} .lsc-root { font-family: Inter, system-ui; color: ${themeVars.text}; font-size: 13px; }
@@ -293,7 +286,8 @@ export const LayersSelectControl: React.FC<Props> = ({
     background:${themeVars.panelBg}; box-shadow:0 12px 34px rgba(0,0,0,0.4);
     border:1px solid ${themeVars.border};
     transition:transform 200ms ease, opacity 150ms ease;
-    overflow:hidden; gap:8px;
+    overflow:hidden;
+    gap:8px;
 }
 #${uid} .lsc-scroll-wrap { position:relative; display:flex; align-items:center; gap:4px; overflow:hidden; flex:1; }
 #${uid} .lsc-tiles-wrap { overflow-x:auto; overflow-y:hidden; scrollbar-width:none; -ms-overflow-style:none; flex:1; }
@@ -304,28 +298,63 @@ export const LayersSelectControl: React.FC<Props> = ({
 #${uid} .lsc-t-thumb { width:${cfg.tileThumb}px; height:${cfg.tileThumb*0.667}px; object-fit:cover; background:#0005; border-radius:8px; }
 #${uid} .lsc-title { color:${themeVars.text}; font-weight:600; max-width:${cfg.tileThumb}px; white-space:nowrap; overflow:hidden; }
 #${uid} .lsc-desc { color:${themeVars.subtext}; font-size:11px; max-width:${cfg.tileThumb}px; white-space:nowrap; overflow:hidden; }
+
+/* ---------------- Arrow Button Styling ---------------- */
 #${uid} .lsc-arrow {
-    position:absolute; top:0; bottom:0; width:36px;
-    display:flex; align-items:center; justify-content:center;
-    font-size:20px; cursor:pointer; user-select:none;
-    background:rgba(0,0,0,0.12); color:#fff; border-radius:8px;
-    z-index:10; transition:background .2s, transform .1s;
+    position:absolute;
+    top:0;
+    bottom:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    width:36px;
+    font-weight:bold;
+    font-size:20px;
+    user-select:none;
+    border-radius:8px;
+    cursor:pointer;
+    z-index:10;
+
+    background: rgba(0,0,0,0.12);
+    color: #ffffff;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
 }
 #${uid} .lsc-arrow-left { left:0; }
 #${uid} .lsc-arrow-right { right:0; }
-#${uid} .lsc-arrow:hover { background:rgba(0,0,0,0.25); transform:scale(1.05); }
-#${uid} .lsc-arrow:active { background:rgba(0,0,0,0.35); transform:scale(0.98); }
+#${uid} .lsc-arrow:hover {
+    background: rgba(0,0,0,0.25);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    transform: scale(1.05);
+}
+#${uid} .lsc-arrow:active {
+    background: rgba(0,0,0,0.35);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    transform: translateY(2px) scale(0.98);
+}
 `}</style>
 
+            {/* NOTE: gap set to 0 so absolute panel positioning + panelGap control spacing */}
             <div className="lsc-root" style={{ display: "flex", alignItems: "center", gap: 0 }}>
                 <div
                     className="lsc-collapsed"
                     onClick={() => setExpanded((s) => !s)}
+                    title={`${selectedItem?.title}\n${selectedItem?.description}`}
+                    role="button"
+                    aria-expanded={expanded}
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            setExpanded((s) => !s);
+                        }
+                    }}
                 >
                     <ManagedImage
                         candidates={[collapsedThumb(selectedItem)]}
                         initial={collapsedThumb(selectedItem)}
                         expanded={false}
+                        alt="Selected thumbnail"
                         className="lsc-thumb"
                         noImageThumb={noImageThumb}
                     />
@@ -336,9 +365,10 @@ export const LayersSelectControl: React.FC<Props> = ({
                     style={{
                         left: expandToRight ? `${cfg.collapsed + panelGap}px` : undefined,
                         right: expandToRight ? undefined : `${cfg.collapsed + panelGap}px`,
-                        maxWidth: parentWidth
-                            ? `${parentWidth - (x + cfg.collapsed) - panelGap - parentGap}px`
-                            : undefined,
+                        /* FIXED: available width = parentWidth - (x + collapsed) - panelGap - parentGap
+                           This keeps parentGap as the distance from the expanded panel's far edge to the parent border,
+                           regardless of where the collapsed control is positioned (x). */
+                        maxWidth: parentWidth ? `${parentWidth - (x + cfg.collapsed) - panelGap - parentGap}px` : undefined,
                     }}
                 >
                     <div
@@ -349,12 +379,15 @@ export const LayersSelectControl: React.FC<Props> = ({
                             pointerEvents: expanded ? "auto" : "none",
                         }}
                     >
-                        {defaultItem && (
+                        {/* Default at edge */}
+                        {typeof onDefault === "function" && (
                             <div
                                 className="lsc-tile"
                                 onClick={() => {
-                                    setSelectedId(defaultItem.id);
-                                    onDefault(defaultItem);
+                                    if (defaultItem) {
+                                        setSelectedId(defaultItem.id);
+                                        onDefault(defaultItem);
+                                    }
                                     setExpanded(false);
                                 }}
                             >
@@ -362,6 +395,7 @@ export const LayersSelectControl: React.FC<Props> = ({
                                     candidates={[defaultThumb]}
                                     initial={defaultThumb}
                                     expanded={expanded}
+                                    alt="Default"
                                     className="lsc-t-thumb"
                                     noImageThumb={noImageThumb}
                                 />
@@ -370,9 +404,12 @@ export const LayersSelectControl: React.FC<Props> = ({
                             </div>
                         )}
 
+                        {/* Scrollable area */}
                         <div className="lsc-scroll-wrap">
                             {canScrollLeft && (
-                                <div className="lsc-arrow lsc-arrow-left" onClick={() => scrollBy(-1)}>❮</div>
+                                <div className="lsc-arrow lsc-arrow-left" onClick={() => scrollBy(-1)}>
+                                    ❮
+                                </div>
                             )}
                             <div className="lsc-tiles-wrap" ref={scrollRef}>
                                 <div className="lsc-tiles">
@@ -390,6 +427,7 @@ export const LayersSelectControl: React.FC<Props> = ({
                                                 candidates={expandedCandidates(item)}
                                                 initial={collapsedThumb(item)}
                                                 expanded={expanded}
+                                                alt={item.title}
                                                 className="lsc-t-thumb"
                                                 noImageThumb={noImageThumb}
                                             />
@@ -400,10 +438,13 @@ export const LayersSelectControl: React.FC<Props> = ({
                                 </div>
                             </div>
                             {canScrollRight && (
-                                <div className="lsc-arrow lsc-arrow-right" onClick={() => scrollBy(1)}>❯</div>
+                                <div className="lsc-arrow lsc-arrow-right" onClick={() => scrollBy(1)}>
+                                    ❯
+                                </div>
                             )}
                         </div>
 
+                        {/* More at edge */}
                         {showMore && (
                             <div
                                 className="lsc-tile"
@@ -416,6 +457,7 @@ export const LayersSelectControl: React.FC<Props> = ({
                                     candidates={[moreThumb]}
                                     initial={moreThumb}
                                     expanded={expanded}
+                                    alt="More"
                                     className="lsc-t-thumb"
                                     noImageThumb={noImageThumb}
                                 />
