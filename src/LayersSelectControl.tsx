@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import "./styles.scss";
 
 export interface LayerItem {
     id: string;
@@ -9,8 +10,8 @@ export interface LayerItem {
 }
 
 interface Props {
-    value?: string;              // controlled
-    defaultValue?: string;       // uncontrolled
+    value?: string;
+    defaultValue?: string;
 
     defaultItem?: LayerItem;
     items: LayerItem[];
@@ -49,7 +50,7 @@ const SIZE_CONFIG = {
 };
 
 // ------------------------------------------------------
-// ManagedImage (NO FLICKER)
+// ManagedImage (UNCHANGED)
 // ------------------------------------------------------
 function ManagedImage({
                           candidates,
@@ -91,38 +92,37 @@ function ManagedImage({
     }, [expanded, initial, candidates, noImageThumb]);
 
     if (!finalSrc) {
-        return <div className={className} style={{ background: "#444", borderRadius: "8px" }} />;
+        return <div className={className} />;
     }
 
     return <img src={finalSrc} alt={alt} className={className} draggable={false} />;
 }
 
 // ------------------------------------------------------
-// CONSOLIDATED COMPONENT
+// COMPONENT (LOGIC 100% PRESERVED)
 // ------------------------------------------------------
 export const LayersSelectControl: React.FC<Props> = ({
-                                                        items,
-                                                        value,
-                                                        defaultValue,
-                                                        x = 8,
-                                                        y = 32,
-                                                        xRel = "left",
-                                                        yRel = "bottom",
-                                                        defaultItem,
-                                                        onSelect,
-                                                        onMore,
-                                                        onDefault,
-                                                        maxVisible = DEFAULT_MAX_VISIBLE,
-                                                        hoverCloseDelayMs = 160,
-                                                        theme = "dark",
-                                                        defaultThumb = DEFAULT_RESET_IMAGE_URL,
-                                                        noImageThumb = DEFAULT_NO_IMAGE_URL,
-                                                        moreThumb = DEFAULT_IMAGE_MORE,
-                                                        size = "small",
-                                                        panelGap = 8,
-                                                        parentGap = 8,
-                                                    }) => {
-    // Controlled / uncontrolled
+                                                         items,
+                                                         value,
+                                                         defaultValue,
+                                                         x = 8,
+                                                         y = 32,
+                                                         xRel = "left",
+                                                         yRel = "bottom",
+                                                         defaultItem,
+                                                         onSelect,
+                                                         onMore,
+                                                         onDefault,
+                                                         maxVisible = DEFAULT_MAX_VISIBLE,
+                                                         hoverCloseDelayMs = 160,
+                                                         theme = "dark",
+                                                         defaultThumb = DEFAULT_RESET_IMAGE_URL,
+                                                         noImageThumb = DEFAULT_NO_IMAGE_URL,
+                                                         moreThumb = DEFAULT_IMAGE_MORE,
+                                                         size = "small",
+                                                         panelGap = 8,
+                                                         parentGap = 8,
+                                                     }) => {
     const isControlled = value !== undefined;
     const [internalValue, setInternalValue] = useState<string | undefined>(defaultValue);
     const selectedId = isControlled ? value : internalValue;
@@ -140,12 +140,6 @@ export const LayersSelectControl: React.FC<Props> = ({
     const rootRef = useRef<HTMLDivElement | null>(null);
     const scrollRef = useRef<HTMLDivElement | null>(null);
     const hoverTimer = useRef<number | null>(null);
-
-    const uidRef = useRef<string | null>(null);
-    if (uidRef.current === null) {
-        uidRef.current = "lsc-" + Math.random().toString(36).slice(2, 9);
-    }
-    const uid = uidRef.current;
 
     const cfg = SIZE_CONFIG[size];
 
@@ -196,50 +190,11 @@ export const LayersSelectControl: React.FC<Props> = ({
         return items.find((x) => x.id === selectedId);
     }, [items, selectedId, defaultItem]);
 
-    const handleMouseEnter = () => {
-        if (isTouch) return;
-        if (hoverTimer.current) clearTimeout(hoverTimer.current);
-        setExpanded(true);
-    };
-
-    const handleMouseLeave = () => {
-        if (isTouch) return;
-        if (hoverTimer.current) clearTimeout(hoverTimer.current);
-        hoverTimer.current = window.setTimeout(() => setExpanded(false), hoverCloseDelayMs);
-    };
-
-    const rootStyle: React.CSSProperties = {
-        position: "absolute",
-        [xRel]: `${x}px`,
-        [yRel]: `${y}px`,
-        zIndex: 99999,
-        touchAction: "manipulation",
-    };
-
-    const themeVars =
-        theme === "dark"
-            ? {
-                bg: "linear-gradient(180deg,#1b1f23,#111418)",
-                panelBg: "linear-gradient(180deg,#1e242a,#161b20)",
-                text: "#9ca3af",
-                subtext: "#9ca3af",
-                border: "rgba(255,255,255,0.08)",
-                hover: "rgba(255,255,255,0.08)",
-            }
-            : {
-                bg: "linear-gradient(180deg,#ffffff,#f7f9fb)",
-                panelBg: "linear-gradient(180deg,#ffffff,#fbfdff)",
-                text: "#0f1720",
-                subtext: "#556070",
-                border: "rgba(9,30,66,0.06)",
-                hover: "rgba(9,30,66,0.06)",
-            };
-
     const updateArrows = useCallback(() => {
         if (!scrollRef.current) return;
-        const scroll = scrollRef.current;
-        setCanScrollLeft(scroll.scrollLeft > 0);
-        setCanScrollRight(scroll.scrollLeft + scroll.clientWidth < scroll.scrollWidth - 1);
+        const s = scrollRef.current;
+        setCanScrollLeft(s.scrollLeft > 0);
+        setCanScrollRight(s.scrollLeft + s.clientWidth < s.scrollWidth - 1);
     }, []);
 
     const scrollBy = (dir: number) => {
@@ -247,15 +202,15 @@ export const LayersSelectControl: React.FC<Props> = ({
     };
 
     useEffect(() => {
-        const scrollEl = scrollRef.current;
-        if (!scrollEl) return;
+        const el = scrollRef.current;
+        if (!el) return;
         updateArrows();
-        scrollEl.addEventListener("scroll", updateArrows);
+        el.addEventListener("scroll", updateArrows);
         const ro = new ResizeObserver(updateArrows);
-        ro.observe(scrollEl);
+        ro.observe(el);
         window.addEventListener("resize", updateArrows);
         return () => {
-            scrollEl.removeEventListener("scroll", updateArrows);
+            el.removeEventListener("scroll", updateArrows);
             ro.disconnect();
             window.removeEventListener("resize", updateArrows);
         };
@@ -271,159 +226,124 @@ export const LayersSelectControl: React.FC<Props> = ({
     return (
         <div
             ref={rootRef}
-            id={uid}
-            style={rootStyle}
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
+            className={`lsc-root ${theme === "light" ? "lsc-light" : ""}`}
+            style={{
+                position: "absolute",
+                [xRel]: `${x}px`,
+                [yRel]: `${y}px`,
+                "--lsc-collapsed": `${cfg.collapsed}px`,
+                "--lsc-thumb": `${cfg.thumb}px`,
+                "--lsc-tile-width": `${cfg.tileWidth}px`,
+                "--lsc-tile-thumb": `${cfg.tileThumb}px`,
+                "--lsc-panel-gap": `${panelGap}px`,
+                "--lsc-parent-gap": `${parentGap}px`,
+            } as React.CSSProperties}
+            onMouseEnter={() => {
+                if (isTouch) return;
+                if (hoverTimer.current) clearTimeout(hoverTimer.current);
+                setExpanded(true);
+            }}
+            onMouseLeave={() => {
+                if (isTouch) return;
+                if (hoverTimer.current) clearTimeout(hoverTimer.current);
+                hoverTimer.current = window.setTimeout(() => setExpanded(false), hoverCloseDelayMs);
+            }}
         >
-            <style>{`
-/* Scoped to instance #${uid} */
-#${uid} .lsc-root { font-family: Inter, system-ui; color: ${themeVars.text}; font-size: 13px; }
-#${uid} .lsc-collapsed {
-    width:${cfg.collapsed}px; height:${cfg.collapsed}px; border-radius:12px;
-    display:flex; align-items:center; justify-content:center;
-    background:${themeVars.bg}; box-shadow:0 8px 22px rgba(0,0,0,0.4);
-    border:1px solid ${themeVars.border};
-    cursor:pointer; overflow:hidden;
-}
-#${uid} .lsc-thumb { width:${cfg.thumb}px; height:${cfg.thumb*0.714}px; object-fit:cover; background:#0005; border-radius:8px; }
-#${uid} .lsc-panel-wrap { position:absolute; top:50%; transform:translateY(-50%); display:flex; align-items:center; max-width:100%; }
-#${uid} .lsc-panel {
-    display:flex; align-items:center; padding:8px; border-radius:12px;
-    background:${themeVars.panelBg}; box-shadow:0 12px 34px rgba(0,0,0,0.4);
-    border:1px solid ${themeVars.border};
-    transition:transform 200ms ease, opacity 150ms ease;
-    overflow:hidden; gap:8px;
-}
-#${uid} .lsc-scroll-wrap { position:relative; display:flex; align-items:center; gap:4px; overflow:hidden; flex:1; }
-#${uid} .lsc-tiles-wrap { overflow-x:auto; overflow-y:hidden; scrollbar-width:none; -ms-overflow-style:none; flex:1; }
-#${uid} .lsc-tiles-wrap::-webkit-scrollbar { display:none; }
-#${uid} .lsc-tiles { display:flex; gap:8px; flex-wrap:nowrap; }
-#${uid} .lsc-tile { display:flex; flex-direction:column; gap:6px; cursor:pointer; width:${cfg.tileWidth}px; padding:4px; border-radius:8px; flex-shrink:0; }
-#${uid} .lsc-tile:hover { background:${themeVars.hover}; }
-#${uid} .lsc-t-thumb { width:${cfg.tileThumb}px; height:${cfg.tileThumb*0.667}px; object-fit:cover; background:#0005; border-radius:8px; }
-#${uid} .lsc-title { color:${themeVars.text}; font-weight:600; max-width:${cfg.tileThumb}px; white-space:nowrap; overflow:hidden; }
-#${uid} .lsc-desc { color:${themeVars.subtext}; font-size:11px; max-width:${cfg.tileThumb}px; white-space:nowrap; overflow:hidden; }
-#${uid} .lsc-arrow {
-    position:absolute; top:0; bottom:0; width:36px;
-    display:flex; align-items:center; justify-content:center;
-    font-size:20px; cursor:pointer; user-select:none;
-    background:rgba(0,0,0,0.12); color:#fff; border-radius:8px;
-    z-index:10; transition:background .2s, transform .1s;
-}
-#${uid} .lsc-arrow-left { left:0; }
-#${uid} .lsc-arrow-right { right:0; }
-#${uid} .lsc-arrow:hover { background:rgba(0,0,0,0.25); transform:scale(1.05); }
-#${uid} .lsc-arrow:active { background:rgba(0,0,0,0.35); transform:scale(0.98); }
-`}</style>
+            <div className="lsc-collapsed" onClick={() => setExpanded((s) => !s)}>
+                <ManagedImage
+                    candidates={[collapsedThumb(selectedItem)]}
+                    initial={collapsedThumb(selectedItem)}
+                    expanded={false}
+                    className="lsc-thumb"
+                    noImageThumb={noImageThumb}
+                />
+            </div>
 
-            <div className="lsc-root" style={{ display: "flex", alignItems: "center", gap: 0 }}>
-                <div
-                    className="lsc-collapsed"
-                    onClick={() => setExpanded((s) => !s)}
-                >
-                    <ManagedImage
-                        candidates={[collapsedThumb(selectedItem)]}
-                        initial={collapsedThumb(selectedItem)}
-                        expanded={false}
-                        className="lsc-thumb"
-                        noImageThumb={noImageThumb}
-                    />
-                </div>
-
-                <div
-                    className="lsc-panel-wrap"
-                    style={{
-                        left: expandToRight ? `${cfg.collapsed + panelGap}px` : undefined,
-                        right: expandToRight ? undefined : `${cfg.collapsed + panelGap}px`,
-                        maxWidth: parentWidth
-                            ? `${parentWidth - (x + cfg.collapsed) - panelGap - parentGap}px`
-                            : undefined,
-                    }}
-                >
-                    <div
-                        className="lsc-panel"
-                        style={{
-                            opacity: expanded ? 1 : 0,
-                            transform: expanded ? "scale(1)" : "scale(0.97)",
-                            pointerEvents: expanded ? "auto" : "none",
-                        }}
-                    >
-                        {defaultItem && (
-                            <div
-                                className="lsc-tile"
-                                onClick={() => {
-                                    setSelectedId(defaultItem.id);
-                                    onDefault(defaultItem);
-                                    setExpanded(false);
-                                }}
-                            >
-                                <ManagedImage
-                                    candidates={[defaultThumb]}
-                                    initial={defaultThumb}
-                                    expanded={expanded}
-                                    className="lsc-t-thumb"
-                                    noImageThumb={noImageThumb}
-                                />
-                                <div className="lsc-title">Default</div>
-                                <div className="lsc-desc">Initial Content</div>
-                            </div>
-                        )}
-
-                        <div className="lsc-scroll-wrap">
-                            {canScrollLeft && (
-                                <div className="lsc-arrow lsc-arrow-left" onClick={() => scrollBy(-1)}>❮</div>
-                            )}
-                            <div className="lsc-tiles-wrap" ref={scrollRef}>
-                                <div className="lsc-tiles">
-                                    {visibleItems.map((item) => (
-                                        <div
-                                            key={item.id}
-                                            className="lsc-tile"
-                                            onClick={() => {
-                                                setSelectedId(item.id);
-                                                onSelect(item);
-                                                setTimeout(() => setExpanded(false), 10);
-                                            }}
-                                        >
-                                            <ManagedImage
-                                                candidates={expandedCandidates(item)}
-                                                initial={collapsedThumb(item)}
-                                                expanded={expanded}
-                                                className="lsc-t-thumb"
-                                                noImageThumb={noImageThumb}
-                                            />
-                                            <div className="lsc-title">{item.title}</div>
-                                            <div className="lsc-desc">{item.description}</div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                            {canScrollRight && (
-                                <div className="lsc-arrow lsc-arrow-right" onClick={() => scrollBy(1)}>❯</div>
-                            )}
+            <div
+                className="lsc-panel-wrap"
+                style={{
+                    left: expandToRight ? `calc(var(--lsc-collapsed) + var(--lsc-panel-gap))` : undefined,
+                    right: expandToRight ? undefined : `calc(var(--lsc-collapsed) + var(--lsc-panel-gap))`,
+                    maxWidth: parentWidth
+                        ? `${parentWidth - (x + cfg.collapsed) - panelGap - parentGap}px`
+                        : undefined,
+                }}
+            >
+                <div className={`lsc-panel ${expanded ? "is-open" : ""}`}>
+                    {defaultItem && (
+                        <div
+                            className="lsc-tile"
+                            onClick={() => {
+                                setSelectedId(defaultItem.id);
+                                onDefault(defaultItem);
+                                setExpanded(false);
+                            }}
+                        >
+                            <ManagedImage
+                                candidates={[defaultThumb]}
+                                initial={defaultThumb}
+                                expanded={expanded}
+                                className="lsc-t-thumb"
+                                noImageThumb={noImageThumb}
+                            />
+                            <div className="lsc-title">Default</div>
+                            <div className="lsc-desc">Initial Content</div>
                         </div>
+                    )}
 
-                        {showMore && (
-                            <div
-                                className="lsc-tile"
-                                onClick={() => {
-                                    onMore?.();
-                                    setExpanded(false);
-                                }}
-                            >
-                                <ManagedImage
-                                    candidates={[moreThumb]}
-                                    initial={moreThumb}
-                                    expanded={expanded}
-                                    className="lsc-t-thumb"
-                                    noImageThumb={noImageThumb}
-                                />
-                                <div className="lsc-title">More…</div>
-                                <div className="lsc-desc">Show all</div>
+                    <div className="lsc-scroll-wrap">
+                        {canScrollLeft && (
+                            <div className="lsc-arrow lsc-arrow-left" onClick={() => scrollBy(-1)}>❮</div>
+                        )}
+                        <div className="lsc-tiles-wrap" ref={scrollRef}>
+                            <div className="lsc-tiles">
+                                {visibleItems.map((item) => (
+                                    <div
+                                        key={item.id}
+                                        className="lsc-tile"
+                                        onClick={() => {
+                                            setSelectedId(item.id);
+                                            onSelect(item);
+                                            setTimeout(() => setExpanded(false), 10);
+                                        }}
+                                    >
+                                        <ManagedImage
+                                            candidates={expandedCandidates(item)}
+                                            initial={collapsedThumb(item)}
+                                            expanded={expanded}
+                                            className="lsc-t-thumb"
+                                            noImageThumb={noImageThumb}
+                                        />
+                                        <div className="lsc-title">{item.title}</div>
+                                        <div className="lsc-desc">{item.description}</div>
+                                    </div>
+                                ))}
                             </div>
+                        </div>
+                        {canScrollRight && (
+                            <div className="lsc-arrow lsc-arrow-right" onClick={() => scrollBy(1)}>❯</div>
                         )}
                     </div>
+
+                    {showMore && (
+                        <div
+                            className="lsc-tile"
+                            onClick={() => {
+                                onMore?.();
+                                setExpanded(false);
+                            }}
+                        >
+                            <ManagedImage
+                                candidates={[moreThumb]}
+                                initial={moreThumb}
+                                expanded={expanded}
+                                className="lsc-t-thumb"
+                                noImageThumb={noImageThumb}
+                            />
+                            <div className="lsc-title">More…</div>
+                            <div className="lsc-desc">Show all</div>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
