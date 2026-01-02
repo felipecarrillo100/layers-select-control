@@ -40,7 +40,7 @@ interface Props {
 const DEFAULT_RESET_IMAGE_URL = "./firstplace.svg";
 const DEFAULT_NO_IMAGE_URL = "./noimage.png";
 const DEFAULT_IMAGE_MORE = "./more-images.png";
-const DEFAULT_MAX_VISIBLE = 4;
+const DEFAULT_MAX_VISIBLE = 5;
 
 const SIZE_CONFIG = {
     small: { collapsed: 64, thumb: 56, tileWidth: 84, tileThumb: 72 },
@@ -220,14 +220,16 @@ export const LayersSelectControl: React.FC<Props> = ({
         return items.slice(0, maxVisible);
     }, [items, maxVisible]);
 
-    const showMore = Boolean(onMore && items.length > (maxVisible || 0));
-
+    const showMore = Boolean(onMore);
+    const hasContent = () => showMore || items.length>0 || defaultItem!==undefined;
+    const toggleExpanded = () => {
+        setExpanded((s) => (s ? false : hasContent()));
+    };
     return (
         <div
             ref={rootRef}
             className={`lsc-root ${theme === "light" ? "lsc-light" : ""}`}
             style={{
-                position: "absolute",
                 [xRel]: `${x}px`,
                 [yRel]: `${y}px`,
                 "--lsc-collapsed": `${cfg.collapsed}px`,
@@ -248,7 +250,7 @@ export const LayersSelectControl: React.FC<Props> = ({
                 hoverTimer.current = window.setTimeout(() => setExpanded(false), hoverCloseDelayMs);
             }}
         >
-            <div className="lsc-collapsed" onClick={() => setExpanded((s) => !s)}>
+            <div className="lsc-collapsed" onClick={toggleExpanded}>
                 <ManagedImage
                     candidates={[collapsedThumb(selectedItem)]}
                     initial={collapsedThumb(selectedItem)}

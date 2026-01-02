@@ -1,7 +1,8 @@
 .lsc-root {
   font-family: Inter, system-ui;
   font-size: 13px;
-  z-index: 99999;
+  z-index: 10;
+  position: absolute;
 
   --bg: linear-gradient(180deg, #1b1f23, #111418);
   --panel-bg: linear-gradient(180deg, #1e242a, #161b20);

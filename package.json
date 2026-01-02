@@ -1,7 +1,7 @@
 {
   "name": "layers-select-control",
   "description": "Mimics Google layer select layers.",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
@@ -23,8 +23,8 @@
     "typescript": "^5.6.0"
   },
   "peerDependencies": {
-    "react": ">=18",
-    "react-dom": ">=18"
+    "react": ">=16.8.0",
+    "react-dom": ">=16.8.0"
   },
   "repository": {
     "url": "https://github.com/felipecarrillo100/layers-select-control"

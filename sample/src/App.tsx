@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import './App.css';
+import '../../src/styles.scss';
 import {LayersSelectControl} from "../../src";
 
 const PrimaryItem =     {
