@@ -49,7 +49,7 @@ const SIZE_CONFIG = {
 };
 
 // ------------------------------------------------------
-// ManagedImage (UNCHANGED)
+// ManagedImage (FIXED – no flashing)
 // ------------------------------------------------------
 function ManagedImage({
                           candidates,
@@ -69,17 +69,18 @@ function ManagedImage({
     const [finalSrc, setFinalSrc] = useState<string | null>(null);
 
     useEffect(() => {
-        setFinalSrc(null);
-        const urls = expanded ? candidates : [initial ?? candidates[0] ?? noImageThumb];
+        const urls = expanded
+            ? candidates
+            : [initial ?? candidates[0] ?? noImageThumb];
+
         let cancelled = false;
 
         const loadNext = (idx: number) => {
-            if (idx >= urls.length) {
-                if (!cancelled) setFinalSrc(noImageThumb);
-                return;
-            }
+            if (idx >= urls.length) return;
             const img = new Image();
-            img.onload = () => !cancelled && setFinalSrc(urls[idx]);
+            img.onload = () => {
+                if (!cancelled) setFinalSrc(urls[idx]);
+            };
             img.onerror = () => !cancelled && loadNext(idx + 1);
             img.src = urls[idx];
         };
@@ -98,7 +99,7 @@ function ManagedImage({
 }
 
 // ------------------------------------------------------
-// COMPONENT (LOGIC 100% PRESERVED)
+// COMPONENT (LOGIC PRESERVED)
 // ------------------------------------------------------
 export const LayersSelectControl: React.FC<Props> = ({
                                                          items,
@@ -189,6 +190,11 @@ export const LayersSelectControl: React.FC<Props> = ({
         return items.find((x) => x.id === selectedId);
     }, [items, selectedId, defaultItem]);
 
+    const collapsedCandidates = useMemo(
+        () => [collapsedThumb(selectedItem)],
+        [collapsedThumb, selectedItem]
+    );
+
     const updateArrows = useCallback(() => {
         if (!scrollRef.current) return;
         const s = scrollRef.current;
@@ -221,10 +227,11 @@ export const LayersSelectControl: React.FC<Props> = ({
     }, [items, maxVisible]);
 
     const showMore = Boolean(onMore);
-    const hasContent = () => showMore || items.length>0 || defaultItem!==undefined;
+    const hasContent = () => showMore || items.length > 0 || defaultItem !== undefined;
     const toggleExpanded = () => {
         setExpanded((s) => (s ? false : hasContent()));
     };
+
     return (
         <div
             ref={rootRef}
@@ -252,8 +259,8 @@ export const LayersSelectControl: React.FC<Props> = ({
         >
             <div className="lsc-collapsed" onClick={toggleExpanded}>
                 <ManagedImage
-                    candidates={[collapsedThumb(selectedItem)]}
-                    initial={collapsedThumb(selectedItem)}
+                    candidates={collapsedCandidates}
+                    initial={collapsedCandidates[0]}
                     expanded={false}
                     className="lsc-thumb"
                     noImageThumb={noImageThumb}
