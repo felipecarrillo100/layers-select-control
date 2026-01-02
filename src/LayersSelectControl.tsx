@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
-import "./styles.scss";
 
 export interface LayerItem {
     id: string;

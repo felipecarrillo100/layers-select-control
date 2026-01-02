@@ -64,6 +64,7 @@ const App: React.FC = () => {
                     x={10}
                     y={280}
                     theme="light"
+                    size="large"
                     value={value}
                     defaultItem={PrimaryItem}
                     items={layers}
