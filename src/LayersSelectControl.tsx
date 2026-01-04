@@ -35,6 +35,9 @@ interface Props {
     size?: "small" | "medium" | "large";
     panelGap?: number;
     parentGap?: number;
+
+    onExpand?: () => void;
+    onCollapse?: () => void;
 }
 
 const DEFAULT_RESET_IMAGE_URL = "./firstplace.svg";
@@ -122,6 +125,8 @@ export const LayersSelectControl: React.FC<Props> = ({
                                                          size = "small",
                                                          panelGap = 8,
                                                          parentGap = 8,
+                                                         onCollapse,
+                                                         onExpand
                                                      }) => {
     const isControlled = value !== undefined;
     const [internalValue, setInternalValue] = useState<string | undefined>(defaultValue);
@@ -146,6 +151,14 @@ export const LayersSelectControl: React.FC<Props> = ({
     useEffect(() => {
         setIsTouch("ontouchstart" in window || navigator.maxTouchPoints > 0);
     }, []);
+
+    useEffect(() => {
+        if (expanded) {
+            onExpand?.();
+        } else {
+            onCollapse?.();
+        }
+    }, [expanded, onExpand, onCollapse]);
 
     useEffect(() => {
         if (!expanded) return;
