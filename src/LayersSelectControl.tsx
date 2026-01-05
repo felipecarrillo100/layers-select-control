@@ -13,6 +13,7 @@ interface Props {
     defaultValue?: string;
 
     defaultItem?: LayerItem;
+    moreItem?: LayerItem;
     items: LayerItem[];
 
     x?: number;
@@ -113,6 +114,7 @@ export const LayersSelectControl: React.FC<Props> = ({
                                                          xRel = "left",
                                                          yRel = "bottom",
                                                          defaultItem,
+                                                         moreItem,
                                                          onSelect,
                                                          onMore,
                                                          onDefault,
@@ -307,8 +309,8 @@ export const LayersSelectControl: React.FC<Props> = ({
                                 className="lsc-t-thumb"
                                 noImageThumb={noImageThumb}
                             />
-                            <div className="lsc-title">Default</div>
-                            <div className="lsc-desc">Initial Content</div>
+                            <div className="lsc-title">{defaultItem.title ? defaultItem.title : "Default"}</div>
+                            <div className="lsc-desc">{defaultItem.description ? defaultItem.description : "Default Content"}</div>
                         </div>
                     )}
 
@@ -361,8 +363,8 @@ export const LayersSelectControl: React.FC<Props> = ({
                                 className="lsc-t-thumb"
                                 noImageThumb={noImageThumb}
                             />
-                            <div className="lsc-title">More…</div>
-                            <div className="lsc-desc">Show all</div>
+                            <div className="lsc-title">{moreItem?.title ? moreItem?.title : "More…"}</div>
+                            <div className="lsc-desc">{moreItem?.description ? moreItem?.description : "Show all"}</div>
                         </div>
                     )}
                 </div>

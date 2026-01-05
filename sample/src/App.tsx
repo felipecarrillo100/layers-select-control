@@ -6,7 +6,7 @@ import {LayersSelectControl} from "../../src";
 const PrimaryItem =     {
         id: "girl",
         title: "Cute girl",
-        description: "Read head",
+        description: "Read head my love",
         thumbnail: "https://ix-marketing.imgix.net/focalpoint.png?ixembed=1731955445055&auto=format,compress",
         thumbnailHd: "https://ix-marketing.imgix.net/focalpoint.png?ixembed=1731955445055&auto=format,compress"
     }
@@ -68,6 +68,7 @@ const App: React.FC = () => {
                     size="large"
                     value={value}
                     defaultItem={PrimaryItem}
+                    moreItem={{id: "", title:"More more", description:"Show moreeee"}}
                     items={layers}
                     onSelect={(item) => {
                         setValue(item.id)
