@@ -1,7 +1,16 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import './App.css';
 import '../../src/styles.scss';
 import {LayersSelectControl} from "../../src";
+import {LayersSelectControlRef} from "../../src/LayersSelectControl";
+
+const ExternalItem =     {
+    id: "foggy-forest",
+    title: "Foggy Forest Landscape",
+    description: "Misty forest with towering trees and soft fog",
+    thumbnail: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=200&fit=crop&auto=format",
+    thumbnailHd: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=200&fit=crop&auto=format"
+}
 
 const PrimaryItem =     {
         id: "girl",
@@ -57,7 +66,13 @@ const layers = [
 
 
 const App: React.FC = () => {
-    const [value, setValue] = useState("urban")
+    const ref1 = useRef<LayersSelectControlRef>(null);
+    const ref2 = useRef<LayersSelectControlRef>(null);
+    const [value, setValue] = useState("urban");
+    const setExternal = () =>{
+        ref1.current?.setSelectedItem(ExternalItem.id);
+        ref2.current?.setSelectedItem(ExternalItem.id);
+    }
     return (
         <>
             <div dir="ltr">
@@ -88,6 +103,9 @@ const App: React.FC = () => {
             </div>
             <div dir="ltr">
                 <LayersSelectControl
+                    ref={ref1}
+                    title={"Mexico"}
+                    externalItem={ExternalItem}
                     x={10}
                     y={180}
                     theme="light"
@@ -106,6 +124,9 @@ const App: React.FC = () => {
             </div>
             <div dir="ltr">
                 <LayersSelectControl
+                    ref={ref2}
+                    title={"Mexico"}
+                    externalItem={ExternalItem}
                     size="medium"
                     xRel="left"
                     items={layers}
@@ -118,6 +139,7 @@ const App: React.FC = () => {
                     parentGap={4}
                 />
             </div>
+            <button onClick={setExternal}>Here</button>
         </>
     );
 };

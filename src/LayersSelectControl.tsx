@@ -9,10 +9,12 @@ export interface LayerItem {
 }
 
 interface Props {
+    title?: string;
     value?: string;
     defaultValue?: string;
 
     defaultItem?: LayerItem;
+    externalItem?: LayerItem;
     moreItem?: LayerItem;
     items: LayerItem[];
 
@@ -102,10 +104,16 @@ function ManagedImage({
     return <img src={finalSrc} alt={alt} className={className} draggable={false} />;
 }
 
+export interface LayersSelectControlRef {
+    setSelectedItem: (id: string) => void;
+    getSelectedItem: () => LayerItem | undefined;
+}
+
 // ------------------------------------------------------
 // COMPONENT (LOGIC PRESERVED)
 // ------------------------------------------------------
-export const LayersSelectControl: React.FC<Props> = ({
+export const LayersSelectControl = React.forwardRef<LayersSelectControlRef, Props>(({
+                                                         title,
                                                          items,
                                                          value,
                                                          defaultValue,
@@ -114,6 +122,7 @@ export const LayersSelectControl: React.FC<Props> = ({
                                                          xRel = "left",
                                                          yRel = "bottom",
                                                          defaultItem,
+                                                         externalItem,
                                                          moreItem,
                                                          onSelect,
                                                          onMore,
@@ -129,7 +138,7 @@ export const LayersSelectControl: React.FC<Props> = ({
                                                          parentGap = 8,
                                                          onCollapse,
                                                          onExpand
-                                                     }) => {
+    }, ref) => {
     const isControlled = value !== undefined;
     const [internalValue, setInternalValue] = useState<string | undefined>(defaultValue);
     const selectedId = isControlled ? value : internalValue;
@@ -202,6 +211,7 @@ export const LayersSelectControl: React.FC<Props> = ({
 
     const selectedItem = useMemo(() => {
         if (defaultItem && selectedId === defaultItem.id) return defaultItem;
+        if (externalItem && selectedId === externalItem.id) return externalItem;
         return items.find((x) => x.id === selectedId);
     }, [items, selectedId, defaultItem]);
 
@@ -247,8 +257,15 @@ export const LayersSelectControl: React.FC<Props> = ({
         setExpanded((s) => (s ? false : hasContent()));
     };
 
+    // ----- Expose methods to parent -----
+    React.useImperativeHandle(ref, () => ({
+        setSelectedItem: (id: string) => setSelectedId(id),
+        getSelectedItem: () => selectedItem,
+    }), [selectedItem, setSelectedId]);
+
     return (
         <div
+            title={title}
             ref={rootRef}
             className={`lsc-root ${theme === "light" ? "lsc-light" : ""}`}
             style={{
@@ -371,4 +388,4 @@ export const LayersSelectControl: React.FC<Props> = ({
             </div>
         </div>
     );
-};
+});

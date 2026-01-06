@@ -5,11 +5,13 @@ A high-performance React component for selecting layers, inspired by the **Googl
 ## Features
 
 * **Google Maps UI:** Seamlessly transitions between a collapsed thumbnail and an expanded list.
-* **Intelligent Image Loading:** The `ManagedImage` system handles HD transitions and fallbacks without UI flickering.
-* **Interactive Scrolling:** Automatically provides navigation arrows for horizontal scrolling when items exceed `maxVisible`.
-* **Theming & Sizing:** Built-in `dark` and `light` themes with three size presets (`small`, `medium`, `large`).
-* **Adaptive Positioning:** Easily anchor the control to any corner of its parent container.
-* **Mobile Optimized:** Includes touch-start detection and pointer-event handling for mobile maps.
+* **Intelligent Image Loading:** The `ManagedImage` system handles HD transitions and fallbacks (`thumbnailHd` -> `thumbnail` -> `noImageThumb`) without UI flickering.
+* **Ref/Imperative API:** Access internal state and control selection programmatically using `useImperativeHandle`.
+* **Adaptive Positioning:** Anchor the control to any corner using `xRel` and `yRel`.
+* **Dynamic Sizing:** Built-in `small`, `medium`, and `large` presets that scale all dimensions via CSS variables.
+* **Interactive Scrolling:** Automatically detects overflow and provides navigation arrows for horizontal scrolling.
+* **Lifecycle Hooks:** `onExpand` and `onCollapse` callbacks for integration with other UI elements.
+* **Touch Optimized:** Includes pointer-event handling and touch-start detection for mobile map environments.
 
 ## Installation
 
@@ -28,22 +30,25 @@ The component is highly configurable to fit different map layouts and branding r
 
 | Prop | Type | Default | Description |
 | --- | --- | --- | --- |
-| `items` | `LayerItem[]` | **Required** | Array of items to display in the panel. |
+| `items` | `LayerItem[]` | **Required** | Array of items to display in the main scrollable area. |
 | `onSelect` | `(item: LayerItem) => void` | **Required** | Callback triggered when a layer is selected. |
 | `onDefault` | `(item?: LayerItem) => void` | **Required** | Callback for the "Default" tile click. |
 | `value` | `string` | - | **Controlled mode**: The ID of the currently selected item. |
 | `defaultValue` | `string` | - | **Uncontrolled mode**: The initial ID to be selected. |
-| `defaultItem` | `LayerItem` | - | Optional item that appears as the "Default" tile. |
-| `size` | `"small" | "medium" | "large"` | `"small"` | Adjusts dimensions of the control and tiles. |
-| `theme` | `"dark" | "light"` | `"dark"` | Built-in color scheme. |
-| `maxVisible` | `number` | `4` | Number of items visible before enabling horizontal scroll. |
+| `defaultItem` | `LayerItem` | - | A special tile that appears fixed at the start of the list. |
+| `moreItem` | `LayerItem` | - | Custom title/description for the "More" tile. |
+| `size` | `"small" | "medium" | "large"` |
+| `theme` | `"dark" | "light"` | `"dark"` |
+| `maxVisible` | `number` | `5` | Number of items visible before enabling horizontal scroll. |
 | `x`, `y` | `number` | `8`, `32` | Numerical offset from the anchor point. |
-| `xRel` | `"left" | "right"` | `"left"` | Horizontal anchor (relative to parent). |
-| `yRel` | `"top" | "bottom"` | `"bottom"` | Vertical anchor (relative to parent). |
+| `xRel` | `"left" | "right"` | `"left"` |
+| `yRel` | `"top" | "bottom"` | `"bottom"` |
 | `onMore` | `() => void` | - | If provided, a "More..." tile is appended to the list. |
-| `hoverCloseDelayMs` | `number` | `160` | Delay before closing the panel on `mouseleave`. |
-| `panelGap` | `number` | `8` | Space between the collapsed thumb and the panel. |
-| `parentGap` | `number` | `8` | Margin maintained between the panel and the parent edge. |
+| `onExpand` | `() => void` | - | Fired when the panel opens. |
+| `onCollapse` | `() => void` | - | Fired when the panel closes. |
+| `defaultThumb` | `string` | - | Override the default "reset" icon URL. |
+| `noImageThumb` | `string` | - | Fallback image for items without thumbnails. |
+| `moreThumb` | `string` | - | Icon for the "More" tile. |
 
 ## Data Interfaces
 
@@ -55,7 +60,19 @@ export interface LayerItem {
     title: string;
     description?: string;
     thumbnail?: string;     // Standard thumbnail
-    thumbnailHd?: string;   // High-quality version loaded when expanded
+    thumbnailHd?: string;   // HD version loaded only when panel expands
+}
+
+```
+
+### Imperative Handle (Ref)
+
+You can control the component externally by passing a `ref`:
+
+```ts
+export interface LayersSelectControlRef {
+    setSelectedItem: (id: string) => void;
+    getSelectedItem: () => LayerItem | undefined;
 }
 
 ```
@@ -63,8 +80,8 @@ export interface LayerItem {
 ## Usage Example
 
 ```tsx
-import React from "react";
-import { LayersSelectControl, LayerItem } from "layers-select-control";
+import React, { useRef } from "react";
+import { LayersSelectControl, LayerItem, LayersSelectControlRef } from "layers-select-control";
 
 const LAYERS: LayerItem[] = [
   { 
@@ -75,17 +92,20 @@ const LAYERS: LayerItem[] = [
     thumbnailHd: "/thumbs/sat-hd.jpg" 
   },
   { id: "terrain", title: "Terrain", description: "Topographic maps", thumbnail: "/thumbs/terrain.jpg" },
-  { id: "streets", title: "Streets", description: "Urban navigation", thumbnail: "/thumbs/streets.jpg" },
 ];
 
 export const App = () => {
+  const controlRef = useRef<LayersSelectControlRef>(null);
+
   return (
-    <div style={{ position: "relative", width: "100%", height: "500px", background: "#eee" }}>
+    <div style={{ position: "relative", width: "100%", height: "600px" }}>
       <LayersSelectControl
+        ref={controlRef}
         items={LAYERS}
         size="medium"
         theme="light"
-        onSelect={(item) => console.log("Selected:", item.title)}
+        defaultItem={{ id: "base", title: "Standard", description: "Default Map" }}
+        onSelect={(item) => console.log("Active Layer:", item.id)}
         onDefault={() => console.log("Reset to default")}
         onMore={() => alert("Open full catalog")}
       />
@@ -97,10 +117,11 @@ export const App = () => {
 
 ## Styling & Theme
 
-The component uses scoped CSS injected via a `<style>` tag, ensuring no styles leak out to the rest of your application. It supports:
+The component uses scoped CSS logic to manage layouts dynamically:
 
-* **Automatic Overflow:** Handles parent container width constraints using `ResizeObserver`.
-* **Responsive Scaling:** Sizes automatically adjust based on the `size` prop.
+* **Responsive Scaling:** Uses internal configurations to calculate exact pixel dimensions for thumbnails and tiles.
+* **Auto-Width:** Utilizes `ResizeObserver` on the parent container to ensure the expanded panel never overflows the screen boundaries.
+* **Pointer Awareness:** Automatically switches between `hover` and `touch` events depending on the user's device.
 
 ## License
 
